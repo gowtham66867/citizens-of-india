@@ -1,5 +1,6 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import api from '../api';
+import AgentStream from '../components/AgentStream';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   PieChart, Pie, Cell, Legend
@@ -285,23 +286,25 @@ export default function MPDashboard() {
             <h1 style={{ fontSize: '1.6rem', fontWeight: 700, color: '#1a202c' }}>MP Dashboard</h1>
             <p style={{ color: '#718096', fontSize: '0.9rem' }}>AI-ranked citizen development priorities</p>
           </div>
-          <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+          <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap' }}>
             <input
               value={constituency} onChange={e => setConstituency(e.target.value)}
-              placeholder="Constituency" style={{ width: '200px' }}
+              placeholder="Constituency" style={{ width: '180px' }}
               onKeyDown={e => e.key === 'Enter' && load()}
             />
             <button onClick={load} style={{
-              padding: '0.6rem 1.2rem', background: '#FF9933', color: '#fff',
+              padding: '0.6rem 1.1rem', background: '#FF9933', color: '#fff',
               borderRadius: '8px', fontWeight: 600, fontSize: '0.9rem',
             }}>Refresh</button>
+            <AgentStream constituency={constituency} />
           </div>
         </div>
 
         {loading ? (
           <div style={{ textAlign: 'center', padding: '4rem', color: '#718096' }}>
-            <div style={{ fontSize: '2rem', marginBottom: '1rem' }}>⏳</div>
-            Analyzing submissions with AI...
+            <div style={{ fontSize: '2rem', marginBottom: '1rem', animation: 'spin 1.5s linear infinite', display: 'inline-block' }}>⏳</div>
+            <div style={{ marginTop: '0.5rem' }}>Loading constituency data…</div>
+            <style>{`@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}`}</style>
           </div>
         ) : (
           <>
