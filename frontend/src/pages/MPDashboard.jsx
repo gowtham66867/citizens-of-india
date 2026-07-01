@@ -234,28 +234,39 @@ export default function MPDashboard() {
   const [submissions, setSubmissions] = useState([]);
   const [heatmapPoints, setHeatmapPoints] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [prioritiesLoading, setPrioritiesLoading] = useState(false);
   const [constituency, setConstituency] = useState('Demo Constituency');
   const [activeTab, setActiveTab] = useState('overview');
+  const [error, setError] = useState(null);
 
   const load = async () => {
     setLoading(true);
+    setError(null);
+    // Load fast endpoints independently so one failure doesn't block all
+    const safe = async (fn) => { try { return await fn(); } catch { return null; } };
+    const [sumRes, themeRes, subRes, heatRes] = await Promise.all([
+      safe(() => api.get(`/analytics/summary?constituency=${encodeURIComponent(constituency)}`)),
+      safe(() => api.get(`/analytics/themes?constituency=${encodeURIComponent(constituency)}`)),
+      safe(() => api.get(`/submissions/list?constituency=${encodeURIComponent(constituency)}&limit=50`)),
+      safe(() => api.get(`/analytics/heatmap?constituency=${encodeURIComponent(constituency)}`)),
+    ]);
+    setSummary(sumRes?.data || null);
+    setThemes(themeRes?.data || []);
+    setSubmissions(subRes?.data || []);
+    setHeatmapPoints(heatRes?.data?.points || []);
+    setLoading(false);
+  };
+
+  const loadPriorities = async () => {
+    if (priorities.length > 0) return; // already loaded
+    setPrioritiesLoading(true);
     try {
-      const [sumRes, themeRes, prioRes, subRes, heatRes] = await Promise.all([
-        api.get(`/analytics/summary?constituency=${encodeURIComponent(constituency)}`),
-        api.get(`/analytics/themes?constituency=${encodeURIComponent(constituency)}`),
-        api.get(`/analytics/priorities?constituency=${encodeURIComponent(constituency)}`),
-        api.get(`/submissions/list?constituency=${encodeURIComponent(constituency)}&limit=50`),
-        api.get(`/analytics/heatmap?constituency=${encodeURIComponent(constituency)}`),
-      ]);
-      setSummary(sumRes.data);
-      setThemes(themeRes.data);
-      setPriorities(prioRes.data.priorities || []);
-      setSubmissions(subRes.data);
-      setHeatmapPoints(heatRes.data.points || []);
+      const res = await api.get(`/analytics/priorities?constituency=${encodeURIComponent(constituency)}`);
+      setPriorities(res.data.priorities || []);
     } catch (e) {
       console.error(e);
     } finally {
-      setLoading(false);
+      setPrioritiesLoading(false);
     }
   };
 
@@ -311,7 +322,7 @@ export default function MPDashboard() {
                 { id: 'heatmap', label: '🗺️ Demand Map' },
                 { id: 'submissions', label: '📋 Submissions' },
               ].map(t => (
-                <button key={t.id} onClick={() => setActiveTab(t.id)} style={{
+                <button key={t.id} onClick={() => { setActiveTab(t.id); if (t.id === 'priorities') loadPriorities(); }} style={{
                   padding: '0.6rem 1.2rem', borderRadius: '8px 8px 0 0', fontWeight: 600, fontSize: '0.9rem',
                   background: activeTab === t.id ? '#FF9933' : 'transparent',
                   color: activeTab === t.id ? '#fff' : '#718096',
@@ -358,14 +369,20 @@ export default function MPDashboard() {
             {activeTab === 'priorities' && (
               <div>
                 <div style={{ marginBottom: '1rem', padding: '0.75rem 1rem', background: '#fff3e0', borderRadius: '8px', fontSize: '0.85rem', color: '#744210' }}>
-                  🤖 AI-ranked based on submission volume, urgency signals, and constituency demographics
+                  🤖 AI-ranked by Gemini using submission volume, urgency signals, and constituency demographics
                 </div>
-                {priorities.length === 0
-                  ? <div className="card" style={{ textAlign: 'center', padding: '3rem', color: '#a0aec0' }}>
-                      No submissions yet. Add some via the citizen portal.
-                    </div>
-                  : priorities.map(p => <PriorityCard key={p.rank} item={p} rank={p.rank} />)
-                }
+                {prioritiesLoading ? (
+                  <div style={{ textAlign: 'center', padding: '3rem', color: '#718096' }}>
+                    <div style={{ fontSize: '1.5rem', marginBottom: '0.75rem' }}>🤖</div>
+                    Gemini is analyzing {themes.length} issue categories…
+                  </div>
+                ) : priorities.length === 0 ? (
+                  <div className="card" style={{ textAlign: 'center', padding: '3rem', color: '#a0aec0' }}>
+                    No submissions yet. Add some via the citizen portal.
+                  </div>
+                ) : (
+                  priorities.map(p => <PriorityCard key={p.rank} item={p} rank={p.rank} />)
+                )}
               </div>
             )}
 
