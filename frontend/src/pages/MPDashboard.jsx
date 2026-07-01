@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import axios from 'axios';
+import api from '../api';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   PieChart, Pie, Cell, Legend
@@ -241,11 +241,11 @@ export default function MPDashboard() {
     setLoading(true);
     try {
       const [sumRes, themeRes, prioRes, subRes, heatRes] = await Promise.all([
-        axios.get(`/analytics/summary?constituency=${encodeURIComponent(constituency)}`),
-        axios.get(`/analytics/themes?constituency=${encodeURIComponent(constituency)}`),
-        axios.get(`/analytics/priorities?constituency=${encodeURIComponent(constituency)}`),
-        axios.get(`/submissions/list?constituency=${encodeURIComponent(constituency)}&limit=50`),
-        axios.get(`/analytics/heatmap?constituency=${encodeURIComponent(constituency)}`),
+        api.get(`/analytics/summary?constituency=${encodeURIComponent(constituency)}`),
+        api.get(`/analytics/themes?constituency=${encodeURIComponent(constituency)}`),
+        api.get(`/analytics/priorities?constituency=${encodeURIComponent(constituency)}`),
+        api.get(`/submissions/list?constituency=${encodeURIComponent(constituency)}&limit=50`),
+        api.get(`/analytics/heatmap?constituency=${encodeURIComponent(constituency)}`),
       ]);
       setSummary(sumRes.data);
       setThemes(themeRes.data);

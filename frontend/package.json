@@ -2,24 +2,36 @@
   "name": "citizens-of-india",
   "version": "1.0.0",
   "private": true,
+  "homepage": "https://gowtham66867.github.io/citizens-of-india",
   "dependencies": {
+    "@vis.gl/react-google-maps": "^1.1.2",
+    "axios": "^1.7.2",
+    "lucide-react": "^0.395.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
+    "react-hot-toast": "^2.4.1",
     "react-router-dom": "^6.23.1",
     "react-scripts": "5.0.1",
-    "@vis.gl/react-google-maps": "^1.1.2",
-    "recharts": "^2.12.7",
-    "axios": "^1.7.2",
-    "react-hot-toast": "^2.4.1",
-    "lucide-react": "^0.395.0"
+    "recharts": "^2.12.7"
   },
   "scripts": {
     "start": "react-scripts start",
-    "build": "react-scripts build"
+    "build": "react-scripts build",
+    "predeploy": "npm run build",
+    "deploy": "gh-pages -d build"
   },
   "browserslist": {
-    "production": [">0.2%", "not dead", "not op_mini all"],
-    "development": ["last 1 chrome version"]
+    "production": [
+      ">0.2%",
+      "not dead",
+      "not op_mini all"
+    ],
+    "development": [
+      "last 1 chrome version"
+    ]
   },
-  "proxy": "http://localhost:8090"
+  "proxy": "http://localhost:8090",
+  "devDependencies": {
+    "gh-pages": "^6.3.0"
+  }
 }

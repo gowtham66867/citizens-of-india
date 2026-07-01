@@ -1,6 +1,6 @@
 import React, { useState, useRef } from 'react';
 import toast from 'react-hot-toast';
-import axios from 'axios';
+import api from '../api';
 
 const LANGUAGES = [
   { code: 'en', label: 'English' },
@@ -65,7 +65,7 @@ export default function CitizenSubmission() {
     if (!text.trim()) return toast.error('Please enter your issue');
     setLoading(true);
     try {
-      const res = await axios.post('/submissions/text', { text, language, constituency });
+      const res = await api.post('/submissions/text', { text, language, constituency });
       setResult(res.data);
       toast.success('Submitted successfully!');
     } catch (e) {
@@ -89,7 +89,7 @@ export default function CitizenSubmission() {
         fd.append('constituency', constituency);
         setLoading(true);
         try {
-          const res = await axios.post('/submissions/voice', fd);
+          const res = await api.post('/submissions/voice', fd);
           setResult(res.data);
           toast.success('Voice submission analyzed!');
         } catch (e) {
@@ -127,7 +127,7 @@ export default function CitizenSubmission() {
     fd.append('constituency', constituency);
     setLoading(true);
     try {
-      const res = await axios.post('/submissions/photo', fd);
+      const res = await api.post('/submissions/photo', fd);
       setResult(res.data);
       toast.success('Photo analyzed!');
     } catch (e) {
