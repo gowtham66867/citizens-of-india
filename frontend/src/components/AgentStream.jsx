@@ -191,7 +191,7 @@ export default function AgentStream({ constituency }) {
 
       {status === 'error' && (
         <div style={{ padding: '0.75rem 1rem', background: '#2d1515', borderRadius: '8px', color: '#fc8181', fontSize: '0.85rem' }}>
-          Pipeline failed — ANTHROPIC_API_KEY may not be set. Check /health for service status.
+          Pipeline failed — GEMINI_API_KEY may not be set or quota exceeded. Check /health for service status.
         </div>
       )}
 
