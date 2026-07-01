@@ -65,7 +65,7 @@ Config for Claude Desktop (`~/.claude/claude_desktop_config.json`):
       "command": "python",
       "args": ["-m", "mcp_server.server"],
       "cwd": "/path/to/Citizens of India/backend",
-      "env": { "API_BASE_URL": "https://citizens-india-backend-1012823692058.us-east1.run.app" }
+      "env": { "API_BASE_URL": "https://citizens-india-backend-564262191703.us-central1.run.app" }
     }
   }
 }
@@ -113,7 +113,7 @@ data: {"event":"completed","briefing":"## Weekly Development Priorities..."}
 
 | Service | URL |
 |---|---|
-| Cloud Run backend | `https://citizens-india-backend-1012823692058.us-east1.run.app` |
+| Cloud Run backend | `https://citizens-india-backend-564262191703.us-central1.run.app` |
 | API docs (Swagger) | `.../docs` |
 | Health check | `.../health` |
 

@@ -3,7 +3,7 @@
 > **Google Cloud Hackathon · Build with AI: Code for Communities · Track 1**  
 > AI platform that turns citizen complaints into ranked development priorities for MPs.
 
-[![Cloud Run](https://img.shields.io/badge/Cloud%20Run-live-brightgreen)](https://citizens-india-backend-1012823692058.us-east1.run.app/health)
+[![Cloud Run](https://img.shields.io/badge/Cloud%20Run-live-brightgreen)](https://citizens-india-backend-564262191703.us-central1.run.app/health)
 [![Tests](https://img.shields.io/badge/tests-85%20passing-brightgreen)](#testing)
 [![Python](https://img.shields.io/badge/python-3.11-blue)](backend/requirements.txt)
 [![React](https://img.shields.io/badge/react-18-blue)](frontend/package.json)
@@ -24,9 +24,9 @@ A multi-channel AI platform where citizens report issues in any Indian language 
 
 | Service | URL |
 |---|---|
-| **Backend API** | https://citizens-india-backend-1012823692058.us-east1.run.app |
-| **Swagger docs** | https://citizens-india-backend-1012823692058.us-east1.run.app/docs |
-| **Health check** | https://citizens-india-backend-1012823692058.us-east1.run.app/health |
+| **Backend API** | https://citizens-india-backend-564262191703.us-central1.run.app |
+| **Swagger docs** | https://citizens-india-backend-564262191703.us-central1.run.app/docs |
+| **Health check** | https://citizens-india-backend-564262191703.us-central1.run.app/health |
 
 ---
 
@@ -107,7 +107,7 @@ python -m mcp_server.server
       "command": "python",
       "args": ["-m", "mcp_server.server"],
       "cwd": "/path/to/Citizens of India/backend",
-      "env": { "API_BASE_URL": "https://citizens-india-backend-1012823692058.us-east1.run.app" }
+      "env": { "API_BASE_URL": "https://citizens-india-backend-564262191703.us-central1.run.app" }
     }
   }
 }
