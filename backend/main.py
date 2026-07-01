@@ -11,7 +11,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-from routers import submissions, analytics, whatsapp, agents, cron
+from routers import submissions, analytics, whatsapp, agents, cron, admin
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
 logger = logging.getLogger(__name__)
@@ -59,6 +59,7 @@ app.include_router(analytics.router)
 app.include_router(whatsapp.router)
 app.include_router(agents.router)
 app.include_router(cron.router)
+app.include_router(admin.router)
 
 
 @app.get("/health")
