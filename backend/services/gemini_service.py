@@ -26,6 +26,18 @@ CATEGORIES = [
 VALID_URGENCY = {"High", "Medium", "Low"}
 VALID_SENTIMENT = {"Positive", "Neutral", "Negative"}
 
+CATEGORY_KEYWORDS = {
+    "Roads & Infrastructure": ["road", "pothole", "bridge", "drain", "street", "traffic"],
+    "Healthcare & Sanitation": ["hospital", "clinic", "toilet", "sanitation", "doctor", "ambulance"],
+    "Education": ["school", "teacher", "classroom", "student", "girls", "college"],
+    "Water Supply": ["water", "tank", "borewell", "pipeline", "drinking"],
+    "Electricity": ["electricity", "power", "light", "streetlight", "transformer"],
+    "Agriculture Support": ["farmer", "crop", "irrigation", "fertilizer", "market"],
+    "Employment & Livelihood": ["job", "employment", "skill", "youth", "livelihood"],
+    "Environment & Waste": ["waste", "garbage", "pollution", "lake", "plastic", "chemical"],
+    "Public Safety": ["police", "safety", "theft", "crime", "women"],
+}
+
 EXTRACT_PROMPT = """
 You are an AI assistant helping an MP's office understand citizen development requests.
 
@@ -91,6 +103,32 @@ def _validate_insight(data: dict) -> dict:
     return data
 
 
+def _fallback_insight(text: str) -> dict:
+    """Keep intake working if Gemini is unavailable or the API key is invalid."""
+    lowered = text.lower()
+    theme = "Other"
+    for category, words in CATEGORY_KEYWORDS.items():
+        if any(word in lowered for word in words):
+            theme = category
+            break
+
+    urgency_terms = ["ambulance", "unsafe", "danger", "accident", "sick", "theft", "emergency", "no water"]
+    urgency = "High" if any(term in lowered for term in urgency_terms) else "Medium"
+    keywords = [word for word in CATEGORY_KEYWORDS.get(theme, []) if word in lowered][:5]
+    if not keywords:
+        keywords = [w.strip(".,!?;:").lower() for w in text.split()[:5] if len(w.strip(".,!?;:")) > 3]
+
+    return {
+        "theme": theme,
+        "summary": text.strip().replace("\n", " ")[:120] or "Citizen development request",
+        "urgency": urgency,
+        "sentiment": "Negative",
+        "keywords": keywords[:5],
+        "location_hint": None,
+        "demand_count_hint": None,
+    }
+
+
 async def _generate_with_retry(prompt: str, max_retries: int = 3) -> str:
     """Call Gemini with exponential backoff on 503/429."""
     delay = 2.0
@@ -113,9 +151,13 @@ async def _generate_with_retry(prompt: str, max_retries: int = 3) -> str:
 
 async def extract_submission_insights(text: str) -> dict:
     prompt = EXTRACT_PROMPT.format(categories=", ".join(CATEGORIES), text=text)
-    raw = await _generate_with_retry(prompt)
-    data = _parse_json(raw)
-    return _validate_insight(data)
+    try:
+        raw = await _generate_with_retry(prompt)
+        data = _parse_json(raw)
+        return _validate_insight(data)
+    except Exception as e:
+        logger.warning("Gemini insight extraction failed; using fallback: %s", str(e)[:160])
+        return _fallback_insight(text)
 
 
 async def analyze_photo(image_bytes: bytes, mime_type: str = "image/jpeg") -> dict:
@@ -140,7 +182,12 @@ async def analyze_photo(image_bytes: bytes, mime_type: str = "image/jpeg") -> di
                 await asyncio.sleep(delay)
                 delay *= 2
             else:
-                raise
+                logger.warning("Gemini photo analysis failed; using fallback: %s", err[:160])
+                return {
+                    "issue_detected": "Photo submitted for civic issue review",
+                    "severity": "Medium",
+                    "suggested_theme": "Other",
+                }
 
 
 async def rank_priorities(themes_summary: list, demographics: dict) -> list:

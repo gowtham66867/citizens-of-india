@@ -95,6 +95,8 @@ async def submit_voice(
     lng: Optional[float] = Form(None),
 ):
     audio_bytes = await audio.read()
+    if not audio_bytes or len(audio_bytes) < 100:
+        raise HTTPException(422, "Audio is empty — please record at least 2 seconds of speech")
     if len(audio_bytes) > MAX_AUDIO_MB * 1024 * 1024:
         raise HTTPException(413, f"Audio exceeds {MAX_AUDIO_MB}MB limit")
 
@@ -103,19 +105,24 @@ async def submit_voice(
 
     try:
         transcript = await speech_service.transcribe_audio(audio_bytes, lang_code)
+    except ValueError as e:
+        raise HTTPException(422, str(e))
     except Exception as e:
-        raise HTTPException(500, f"Speech transcription failed: {e}")
+        err = str(e)
+        if "quota" in err.lower() or "429" in err:
+            raise HTTPException(429, "Speech API quota exceeded — try again in a moment")
+        raise HTTPException(422, f"Could not transcribe audio — speak clearly and try again")
 
     if not transcript.strip():
         raise HTTPException(422, "Could not transcribe audio — please speak clearly and retry")
 
-    translated, _ = translation_service.detect_and_translate(transcript)
+    translated, source_lang = translation_service.detect_and_translate(transcript)
     insights = await gemini_service.extract_submission_insights(translated)
 
     doc = {
         "original_text": transcript,
         "translated_text": translated,
-        "source_language": language,
+        "source_language": source_lang or language,
         "constituency": _sanitize(constituency)[:120],
         "lat": lat,
         "lng": lng,
@@ -124,7 +131,13 @@ async def submit_voice(
         **insights,
     }
     doc_id = firestore_service.save_submission(doc)
-    return {"id": doc_id, "transcript": transcript, "status": "saved", **insights}
+    return {
+        "id": doc_id,
+        "transcript": transcript,
+        "transcription": transcript,
+        "status": "saved",
+        **insights,
+    }
 
 
 @router.post("/photo")

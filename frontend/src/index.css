@@ -8,6 +8,7 @@ body {
 
 :root {
   --saffron: #FF9933;
+  --saffron-dark: #e07b20;
   --white: #FFFFFF;
   --green: #138808;
   --navy: #000080;
@@ -21,31 +22,48 @@ body {
 
 .card {
   background: var(--card-bg);
-  border-radius: 12px;
+  border-radius: 14px;
   box-shadow: 0 1px 3px rgba(0,0,0,0.08), 0 4px 16px rgba(0,0,0,0.04);
   padding: 1.5rem;
 }
 
-button {
-  cursor: pointer;
-  border: none;
-  font-family: inherit;
-}
+button { cursor: pointer; border: none; font-family: inherit; }
 
 input, textarea, select {
   font-family: inherit;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  padding: 0.6rem 0.9rem;
+  border: 1.5px solid var(--border);
+  border-radius: 10px;
+  padding: 0.65rem 0.95rem;
   width: 100%;
   font-size: 0.95rem;
   outline: none;
-  transition: border-color 0.2s;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  background: #fff;
 }
 
 input:focus, textarea:focus, select:focus {
   border-color: var(--saffron);
-  box-shadow: 0 0 0 3px rgba(255, 153, 51, 0.15);
+  box-shadow: 0 0 0 3px rgba(255,153,51,0.15);
 }
 
 textarea { resize: vertical; min-height: 100px; }
+
+.skeleton {
+  background: linear-gradient(90deg,#f0f0f0 25%,#e8e8e8 50%,#f0f0f0 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+  border-radius: 8px;
+}
+
+@keyframes shimmer { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
+@keyframes fadeInUp { from{opacity:0;transform:translateY(20px)} to{opacity:1;transform:translateY(0)} }
+@keyframes scaleIn { from{opacity:0;transform:scale(0.85)} to{opacity:1;transform:scale(1)} }
+@keyframes spin { from{transform:rotate(0deg)} to{transform:rotate(360deg)} }
+@keyframes pulse { 0%,100%{box-shadow:0 0 0 0 rgba(229,62,62,.4)} 50%{box-shadow:0 0 0 16px rgba(229,62,62,0)} }
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
+@keyframes bounce { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-5px)} }
+@keyframes popIn { 0%{opacity:0;transform:scale(0.5) rotate(-10deg)} 70%{transform:scale(1.1) rotate(3deg)} 100%{opacity:1;transform:scale(1) rotate(0)} }
+@keyframes confetti { 0%{transform:translateY(0) rotate(0);opacity:1} 100%{transform:translateY(80px) rotate(720deg);opacity:0} }
+
+.fade-in-up { animation: fadeInUp 0.5s ease both; }
+.scale-in   { animation: scaleIn 0.4s cubic-bezier(.34,1.56,.64,1) both; }
