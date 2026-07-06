@@ -128,18 +128,22 @@ async def test_retry_succeeds_on_second_attempt():
     assert result["theme"] == "Education"
 
 
-# ── TC-G13: Retry exhausted raises exception ─────────────────────────────────
+# ── TC-G13: Retry exhausted falls back gracefully (never raises to caller) ────
 @pytest.mark.asyncio
-async def test_retry_raises_after_max_attempts():
+async def test_retry_falls_back_after_max_attempts():
     async def always_fail(*args, **kwargs):
         raise Exception("503 UNAVAILABLE")
 
+    import services.claude_service  # ensure module loaded before patching
     with patch("services.gemini_service._client") as mc, \
-         patch("asyncio.sleep", new=AsyncMock()):
+         patch("asyncio.sleep", new=AsyncMock()), \
+         patch("services.claude_service.haiku_analyse", new=AsyncMock(return_value=None)):
         mc.aio.models.generate_content = always_fail
         from services.gemini_service import extract_submission_insights
-        with pytest.raises(Exception):
-            await extract_submission_insights("Some issue.")
+        # Multi-provider fallback: should return keyword-based insight, not raise
+        result = await extract_submission_insights("Road pothole issue.")
+        assert isinstance(result, dict)
+        assert "theme" in result
 
 
 # ── TC-G14: 429 also triggers retry ──────────────────────────────────────────
@@ -166,7 +170,7 @@ async def test_retry_on_429():
     assert result["theme"] == "Water Supply"
 
 
-# ── TC-G15: Non-retriable errors not retried ─────────────────────────────────
+# ── TC-G15: Non-retriable errors not retried, falls back gracefully ──────────
 @pytest.mark.asyncio
 async def test_non_retriable_error_not_retried():
     call_count = 0
@@ -175,12 +179,15 @@ async def test_non_retriable_error_not_retried():
         call_count += 1
         raise Exception("401 UNAUTHENTICATED")
 
+    import services.claude_service  # ensure module loaded before patching
     with patch("services.gemini_service._client") as mc, \
-         patch("asyncio.sleep", new=AsyncMock()):
+         patch("asyncio.sleep", new=AsyncMock()), \
+         patch("services.claude_service.haiku_analyse", new=AsyncMock(return_value=None)):
         mc.aio.models.generate_content = auth_error
         from services.gemini_service import extract_submission_insights
-        with pytest.raises(Exception):
-            await extract_submission_insights("Some issue.")
+        # Auth errors are non-retriable; should fall back to keyword insight
+        result = await extract_submission_insights("Some issue.")
+        assert isinstance(result, dict)
 
     assert call_count == 1  # no retry for auth errors
 

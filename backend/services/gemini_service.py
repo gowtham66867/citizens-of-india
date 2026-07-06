@@ -149,14 +149,31 @@ async def _generate_with_retry(prompt: str, max_retries: int = 3) -> str:
     raise RuntimeError("Gemini retries exhausted")
 
 
+def _estimate_gemini_cost(text: str) -> float:
+    """Rough cost estimate: Gemini 2.5 Flash Lite ~$0.075/1M input tokens."""
+    tokens = len(text) // 4
+    return round(tokens * 0.000000075, 8)
+
+
 async def extract_submission_insights(text: str) -> dict:
     prompt = EXTRACT_PROMPT.format(categories=", ".join(CATEGORIES), text=text)
     try:
         raw = await _generate_with_retry(prompt)
         data = _parse_json(raw)
-        return _validate_insight(data)
+        result = _validate_insight(data)
+        result["provider"] = "gemini"
+        result["gemini_cost_usd"] = _estimate_gemini_cost(prompt + raw)
+        return result
     except Exception as e:
-        logger.warning("Gemini insight extraction failed; using fallback: %s", str(e)[:160])
+        logger.warning("Gemini insight extraction failed; trying Claude fallback: %s", str(e)[:160])
+        # Multi-provider fallback: Gemini → Claude Haiku
+        try:
+            from services.claude_service import haiku_analyse
+            claude_result = await haiku_analyse(text)
+            if claude_result:
+                return _validate_insight(claude_result)
+        except Exception as ce:
+            logger.warning("Claude fallback also failed: %s", str(ce)[:120])
         return _fallback_insight(text)
 
 

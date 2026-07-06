@@ -4,6 +4,8 @@ from typing import Optional
 from pydantic import BaseModel, field_validator
 from services import gemini_service, speech_service, translation_service, firestore_service
 from services.limiter import limiter
+from services.security_service import detect_injection
+from services.metrics_service import record_submission, record_llm_call, INJECTION_ATTEMPTS
 
 router = APIRouter(prefix="/submissions", tags=["submissions"])
 
@@ -59,6 +61,11 @@ class TextSubmission(BaseModel):
 async def submit_text(request: Request, payload: TextSubmission):
     text = _sanitize(payload.text)
 
+    # Prompt injection guard
+    if detect_injection(text):
+        INJECTION_ATTEMPTS.inc()
+        raise HTTPException(422, "Submission contains disallowed content")
+
     translated, source_lang = text, payload.language
     if payload.language != "en":
         try:
@@ -67,6 +74,18 @@ async def submit_text(request: Request, payload: TextSubmission):
             pass
 
     insights = await gemini_service.extract_submission_insights(translated)
+
+    # Claude tool-use validation (enriches insights with confidence + injection_risk)
+    try:
+        from services.claude_service import validate_with_tool_use
+        insights = await validate_with_tool_use(translated, insights)
+        record_llm_call("claude-haiku", "validate", True,
+                        cost_usd=insights.get("claude_cost_usd", 0))
+    except Exception:
+        pass
+
+    record_submission("text", insights.get("theme", "Other"), insights.get("urgency", "Medium"))
+    record_llm_call("gemini", "extract", True, cost_usd=insights.get("gemini_cost_usd", 0))
 
     doc = {
         "original_text": text,
@@ -203,8 +222,13 @@ async def submit_sms(request: Request):
     if len(body) > MAX_TEXT_LEN:
         body = body[:MAX_TEXT_LEN]
 
+    if detect_injection(body):
+        INJECTION_ATTEMPTS.inc()
+        return {"status": "rejected", "reason": "disallowed content"}
+
     translated, _ = translation_service.detect_and_translate(body)
     insights = await gemini_service.extract_submission_insights(translated)
+    record_submission("sms", insights.get("theme", "Other"), insights.get("urgency", "Medium"))
 
     doc = {
         "original_text": body,

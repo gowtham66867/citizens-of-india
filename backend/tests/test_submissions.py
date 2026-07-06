@@ -14,16 +14,17 @@ async def test_health_returns_ok(client):
     r = await client.get("/health")
     assert r.status_code == 200
     d = r.json()
-    assert d["status"] == "ok"
-    assert "storage" in d
+    # Composite health: "ok" in full env, "degraded" in test env (no real API keys)
+    assert d["status"] in ("ok", "degraded")
+    assert "checks" in d  # rich per-service checks
     assert "version" in d
 
 
-# ── TC-S02: Health includes X-Request-ID header ───────────────────────────────
+# ── TC-S02: Health includes X-Trace-ID header ────────────────────────────────
 @pytest.mark.asyncio
 async def test_request_id_header_present(client):
     r = await client.get("/health")
-    assert "x-request-id" in r.headers
+    assert "x-trace-id" in r.headers  # renamed from x-request-id
 
 
 # ── TC-S03: Text submission — happy path ──────────────────────────────────────
